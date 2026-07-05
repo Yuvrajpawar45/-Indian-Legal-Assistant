@@ -1,9 +1,7 @@
-@"
 venv/
 __pycache__/
 *.pyc
 storage/
 data/processed/
-.env 
+.env
 snapshots/
-"@ | Out-File -Encoding utf8 .gitignore
