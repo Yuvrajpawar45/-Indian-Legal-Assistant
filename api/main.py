@@ -41,6 +41,7 @@ class QueryResponse(BaseModel):
     answer: str
     citations: List[Citation]
     valid: bool
+    query_metadata: Optional[dict] = None
 
 
 @app.get("/health")

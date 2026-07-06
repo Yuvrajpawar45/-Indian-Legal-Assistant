@@ -1,0 +1,32 @@
+[
+  {
+    "id": "it-act-hacking",
+    "question": "What is the punishment for hacking under the IT Act?",
+    "expected_source_files": ["IT_Act_2000.pdf", "A2000-21 (1).pdf"],
+    "expected_terms": ["66", "computer", "resource"]
+  },
+  {
+    "id": "it-rules-intermediary",
+    "question": "What due diligence must social media intermediaries follow under IT Rules?",
+    "expected_source_files": ["IT_Rules_2021.pdf"],
+    "expected_terms": ["intermediary", "due diligence"]
+  },
+  {
+    "id": "consumer-complaint",
+    "question": "What can a consumer do for deficiency in service?",
+    "expected_source_files": ["Consumer_Protection_Act_2019.pdf"],
+    "expected_terms": ["consumer", "deficiency", "service"]
+  },
+  {
+    "id": "bnss-fir",
+    "question": "What does BNSS say about FIR or information to police?",
+    "expected_source_files": ["BNSS_2023.pdf"],
+    "expected_terms": ["information", "police"]
+  },
+  {
+    "id": "bns-cheating",
+    "question": "What is cheating under BNS?",
+    "expected_source_files": ["BNS_2023.pdf"],
+    "expected_terms": ["cheating", "dishonestly", "deception"]
+  }
+]

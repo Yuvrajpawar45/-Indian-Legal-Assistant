@@ -75,7 +75,8 @@ Scope is deliberately narrow: **cyber law and the statutes it's actually prosecu
 | 3 | **Chunk** | Splits on Section/Article/Clause boundaries - not arbitrary character counts |
 | 4 | **Embed** | BGE-M3 (1024-dim, multilingual) encodes each chunk |
 | 5 | **Store** | Chunks + vectors upload to Qdrant; BM25 sparse index built in parallel |
-| 6 | **Retrieve** | Query hits both dense (Qdrant) and sparse (BM25) search, fused |
+| V2 | **Rewrite + Filter** | Expands user queries with legal terms and detects Act-level metadata filters |
+| 6 | **Retrieve** | Query hits both dense (Qdrant) and sparse (BM25) search, filtered and fused |
 | 7 | **Rerank** | BGE cross-encoder re-scores candidates for true query relevance |
 | 8 | **Validate** | Checks whether retrieved chunks actually answer the question - refuses if not |
 | 9 | **Generate** | Qwen3 (via Ollama) answers *only* from the validated chunks, with citations |
@@ -96,6 +97,23 @@ Scope is deliberately narrow: **cyber law and the statutes it's actually prosecu
 | Backend | FastAPI (CORS-enabled) |
 | Frontend | Static HTML/CSS/JS - no build step |
 | Local inference | Runs entirely offline once models are pulled - no API keys, no per-query cost |
+
+---
+
+## V2 retrieval upgrades
+
+- **Query rewriting:** expands common user phrases like "hacking", "FIR", "bail", or "consumer complaint" into statute-friendly retrieval terms.
+- **Metadata filtering:** detects Act mentions and filters both Qdrant and BM25 retrieval by stable `source_file` metadata.
+- **Prompt builder:** keeps grounded answer instructions and citation formatting in one reusable module.
+- **Retrieval evaluation:** runs a small benchmark set and writes a Markdown report with source-hit and term-hit checks.
+
+Run the quick retrieval evaluation after Qdrant and the BM25 index are ready:
+
+```bash
+python -m scripts.evaluate_retrieval --skip-rerank
+```
+
+Run without `--skip-rerank` when you want the slower reranker-included evaluation. The report is written to `snapshots/retrieval_eval_report.md`.
 
 ---
 
@@ -157,7 +175,13 @@ POST /query
       "rerank_score": 0.992
     }
   ],
-  "valid": true
+  "valid": true,
+  "query_metadata": {
+    "original_question": "What is the punishment for hacking under the IT Act?",
+    "rewritten_question": "What is the punishment for hacking under the IT Act? Related legal terms: unauthorised access, computer resource, Section 66.",
+    "act_filter": ["it_act"],
+    "act_filter_display": ["Information Technology Act, 2000"]
+  }
 }
 ```
 
@@ -181,10 +205,13 @@ legal-rag/
 |-- app/                # Static frontend (index.html)
 |-- data/
 |   |-- raw_pdfs/       # Source statute PDFs
+|   |-- eval_queries.json
 |   `-- processed/      # Parsed/cleaned/chunked intermediates
 |-- scripts/
-|   `-- download_acts.py
+|   |-- download_acts.py
+|   `-- evaluate_retrieval.py
 |-- src/
+|   |-- act_filter.py    # V2 metadata filtering
 |   |-- parser.py       # Stage 1
 |   |-- cleaner.py       # Stage 2
 |   |-- chunker.py       # Stage 3
@@ -194,6 +221,8 @@ legal-rag/
 |   |-- reranker.py      # Stage 7
 |   |-- validator.py     # Stage 8
 |   |-- generator.py     # Stage 9
+|   |-- prompt_builder.py
+|   |-- query_rewriter.py
 |   `-- pipeline.py       # Orchestrator
 `-- requirements.txt
 ```
