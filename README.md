@@ -28,26 +28,48 @@ It also gets a detail most similar projects miss: **India's criminal law was com
 ## Architecture
 
 ```mermaid
-flowchart TD
-    A[Raw Statute PDFs] -->|PyMuPDF| B[Parsed Pages]
-    B -->|Cleaning + Metadata| C[Annotated Pages]
-    C -->|Legal-aware Chunking| D["Chunks<br/>(Section/Article boundaries)"]
-    D -->|BGE-M3| E[Dense Vectors]
-    E --> F[(Qdrant<br/>Hybrid Index)]
-    D -->|BM25| F
+flowchart LR
+    subgraph Ingest["1. Corpus Ingestion"]
+        A[Raw Statute PDFs] --> B[Parse pages<br/>PyMuPDF]
+        B --> C[Clean text<br/>Extract metadata]
+        C --> D[Legal-aware chunks<br/>Section / Rule boundaries]
+        D --> E[Dense embeddings<br/>BGE-M3]
+        D --> F[BM25 sparse index]
+        E --> G[(Qdrant vector DB)]
+        F --> H[(BM25 index file)]
+    end
 
-    Q[User Question] --> G[Hybrid Retrieval<br/>Dense + BM25]
-    F --> G
-    G --> H[BGE Reranker<br/>Cross-Encoder]
-    H --> I{Context<br/>Validation}
-    I -->|Relevant| J[Qwen3<br/>Generation]
-    I -->|Not Relevant| K["Refuse to Answer<br/>(no hallucination)"]
-    J --> L[Answer + Section Citations]
+    subgraph Query["2. V2 Query Processing"]
+        Q[User question] --> R[Query rewriting<br/>add legal terms]
+        Q --> S[Act filter detection<br/>IT Act / BNS / BNSS / Rules]
+    end
 
-    style F fill:#AD8A3D,color:#fff
-    style I fill:#7A2331,color:#fff
-    style J fill:#1B2130,color:#fff
-    style K fill:#5C6472,color:#fff
+    subgraph Retrieve["3. Retrieval + Ranking"]
+        R --> T[Hybrid retrieval]
+        S --> T
+        G --> T
+        H --> T
+        T --> U[Reciprocal Rank Fusion]
+        U --> V[BGE reranker<br/>cross-encoder]
+    end
+
+    subgraph Answer["4. Grounded Answering"]
+        V --> W{Context valid?}
+        W -->|Yes| X[Prompt builder<br/>structured legal prompt]
+        X --> Y[Qwen3 via Ollama]
+        Y --> Z[Answer with section citations]
+        W -->|No| N[Refuse to answer<br/>outside indexed corpus]
+    end
+
+    style Ingest fill:#F7F3E8,stroke:#AD8A3D,color:#1B2130
+    style Query fill:#EEF4F8,stroke:#5C6472,color:#1B2130
+    style Retrieve fill:#F4EEF1,stroke:#7A2331,color:#1B2130
+    style Answer fill:#EEF2EC,stroke:#4F6F52,color:#1B2130
+    style G fill:#AD8A3D,color:#fff
+    style H fill:#AD8A3D,color:#fff
+    style W fill:#7A2331,color:#fff
+    style Y fill:#1B2130,color:#fff
+    style N fill:#5C6472,color:#fff
 ```
 
 ---
