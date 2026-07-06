@@ -23,15 +23,5 @@ services:
     depends_on:
       - qdrant
 
-  streamlit:
-    build: .
-    command: streamlit run app/streamlit_app.py --server.port 8501 --server.address 0.0.0.0
-    ports:
-      - "8501:8501"
-    environment:
-      - API_URL=http://api:8000
-    depends_on:
-      - api
-
 volumes:
   qdrant_data:

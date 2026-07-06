@@ -5,3 +5,4 @@ storage/
 data/processed/
 .env
 snapshots/
+*.zip
