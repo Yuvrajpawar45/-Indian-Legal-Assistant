@@ -24,6 +24,9 @@ from src.reranker import TOP_K_RERANKED, rerank
 from src.retriever import TOP_K_DENSE, build_bm25_index, hybrid_search
 from src.validator import validate_context
 from src.vector_store import upload_chunks
+import os
+
+RERANK_ENABLED = os.getenv("RERANK_ENABLED", "true").lower() == "true"
 
 RAW_DIR = Path("data/raw_pdfs")
 PROCESSED_DIR = Path("data/processed")
@@ -87,10 +90,14 @@ def run_query(question: str) -> dict:
     print(f"Fused candidates: {len(candidates)} | took {time.time()-t0:.2f}s")
 
     t1 = time.time()
-    print("\n=== Stage 7: BGE Reranking ===")
-    reranked = rerank(rewritten_question, candidates, top_k=TOP_K_RERANKED)
-    print(f"Top {len(reranked)} chunks after rerank | took {time.time()-t1:.2f}s")
-
+    if RERANK_ENABLED:
+        print("\n=== Stage 7: BGE Reranking ===")
+        reranked = rerank(rewritten_question, candidates, top_k=TOP_K_RERANKED)
+        print(f"Top {len(reranked)} chunks after rerank | took {time.time()-t1:.2f}s")
+    else:
+        print("\n=== Stage 7: BGE Reranking (SKIPPED — RERANK_ENABLED=false) ===")
+        reranked = candidates[:TOP_K_RERANKED]
+        print(f"Top {len(reranked)} chunks from hybrid fusion (no rerank) | took {time.time()-t1:.2f}s")
     t2 = time.time()
     print("\n=== Stage 8: Context Validation ===")
     validation = validate_context(reranked)
